@@ -18,8 +18,7 @@ class Kontak {
   });
 }
 
-// Data kontak dibuat SEKALI lalu dipakai bersama oleh halaman Kontak dan Cari,
-// supaya kontak yang tampil di dua halaman itu sama.
+
 class KontakStore {
   static const List<String> kategori = [
     'Keluarga',
