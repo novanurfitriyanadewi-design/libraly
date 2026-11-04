@@ -11,7 +11,6 @@ class ProfilPage extends StatelessWidget {
     final nama = me?.name ?? 'Pengguna';
     final email = me?.email ?? '-';
 
-    // Foto anime hanya untuk akun Nova, akun lain tampil inisial
     final pakaiFoto = nama == 'Nova';
 
     return Padding(
