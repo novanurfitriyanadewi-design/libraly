@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import '../main.dart';
 import '../data/book_store.dart';
+import '../counter/counter_page.dart';
+import '../profile/profile_page.dart' show AdminProfilePage;
 import 'welcome_page.dart';
 import 'user_list_page.dart';
 import 'admin_books_page.dart';
 import 'admin_loans_page.dart';
-import 'kontak_menu_page.dart'; // <-- BARU
+import 'kontak_menu_page.dart';
 
 // ============================================================
 // KERANGKA HALAMAN ADMIN (judul + tombol aksi + isi)
@@ -71,22 +73,45 @@ class AdminShell extends StatefulWidget {
 }
 
 class _AdminShellState extends State<AdminShell> {
-  int _index = 0;
+  // 1 = Dashboard tetap jadi halaman pertama setelah login.
+  // Ubah ke 0 kalau ingin halaman Profil yang pertama terbuka.
+  int _index = 1;
+
+  // Indeks menu Counter (urutan terakhir, setelah Kontak)
+  static const int _counterIndex = 6;
 
   static const _menu = <(IconData, String)>[
+    (Icons.account_circle_rounded, 'Profil'),
     (Icons.dashboard_rounded, 'Dashboard'),
     (Icons.menu_book_rounded, 'Data Buku'),
     (Icons.groups_rounded, 'Data Anggota'),
     (Icons.swap_horiz_rounded, 'Peminjaman'),
-    (Icons.contacts_rounded, 'Kontak'), // <-- BARU
+    (Icons.contacts_rounded, 'Kontak'),
+    (Icons.exposure_rounded, 'Counter'),
   ];
 
   final List<Widget> _pages = [
+    const AdminProfilePage(),
     const AdminDashboard(),
     const AdminBooksPage(),
     UserListPage(), // CRUD anggota via REST API (reqres.in) — khusus admin
     const AdminLoansPage(),
-    const KontakMenuPage(), // <-- BARU: tampil di dalam shell, sidebar tetap ada
+    const KontakMenuPage(), // tampil di dalam shell, sidebar tetap ada
+  ];
+
+  // Semua halaman + halaman Counter.
+  // Counter dibuat "malas" (lazy): hanya dibangun saat menunya dipilih,
+  // sehingga initState() berjalan saat menu dibuka dan dispose() berjalan
+  // saat pindah ke menu lain. Ini memudahkan bukti lifecycle di console.
+  List<Widget> get _allPages => [
+    ..._pages,
+    _index == _counterIndex
+        ? const PageFrame(
+      title: 'Counter',
+      subtitle: 'Latihan state management dasar',
+      child: CounterPage(),
+    )
+        : const SizedBox.shrink(),
   ];
 
   void _logout() {
@@ -223,17 +248,28 @@ class _AdminShellState extends State<AdminShell> {
               ),
             ),
             const SizedBox(height: 18),
-            for (int i = 0; i < _menu.length; i++)
-              _navTile(
-                icon: _menu[i].$1,
-                label: _menu[i].$2,
-                selected: _index == i,
-                onTap: () {
-                  setState(() => _index = i);
-                  if (inDrawer) Navigator.pop(context);
-                },
+
+            // Daftar menu: bisa di-scroll kalau layar pendek,
+            // tombol Keluar tetap menempel di bawah.
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    for (int i = 0; i < _menu.length; i++)
+                      _navTile(
+                        icon: _menu[i].$1,
+                        label: _menu[i].$2,
+                        selected: _index == i,
+                        onTap: () {
+                          setState(() => _index = i);
+                          if (inDrawer) Navigator.pop(context);
+                        },
+                      ),
+                  ],
+                ),
               ),
-            const Spacer(),
+            ),
+
             Divider(color: Colors.white.withOpacity(0.2), height: 1),
             const SizedBox(height: 8),
             _navTile(
@@ -261,7 +297,7 @@ class _AdminShellState extends State<AdminShell> {
               children: [
                 SizedBox(width: 270, child: _sidebar(inDrawer: false)),
                 Expanded(
-                  child: IndexedStack(index: _index, children: _pages),
+                  child: IndexedStack(index: _index, children: _allPages),
                 ),
               ],
             ),
@@ -279,7 +315,7 @@ class _AdminShellState extends State<AdminShell> {
             shape: const RoundedRectangleBorder(),
             child: _sidebar(inDrawer: true),
           ),
-          body: IndexedStack(index: _index, children: _pages),
+          body: IndexedStack(index: _index, children: _allPages),
         );
       },
     );
